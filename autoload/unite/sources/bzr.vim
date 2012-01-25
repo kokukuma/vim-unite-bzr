@@ -221,7 +221,7 @@ endfunction
 function! s:unite_bzr_delta.gather_candidates(args, context)
 
     " exe bzr diff
-    let l:bzr_delta = s:exe_bzr_delta(a:args[0][0])
+    let l:bzr_delta = s:exe_bzr_delta(a:args[0])
 
     "
     return map(copy(l:bzr_delta), '{
