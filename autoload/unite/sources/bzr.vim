@@ -283,23 +283,23 @@ let s:unite_bzr_status.action_table.common = s:action_table_status
 
 
 
-" bzr revert
-let s:action_table_status = {}
-
-" bzr add
-let s:action_table_status.bzr_add = {
-\   'description'   : 'bzr add',
-\   'is_selectable' : 1,
-\   }
-
-function! s:action_table_status.bzr_add.func(candidates)
-    for l:candidate in a:candidates
-        let l:bzrstatus = vimproc#system("bzr add ".l:candidate['action__path'])
-    endfor
-endfunction
-
+"" bzr revert
+"let s:action_table_status = {}
 "
-let s:unite_bzr_status.action_table.common = s:action_table_status
+"" bzr add
+"let s:action_table_status.bzr_add = {
+"\   'description'   : 'bzr add',
+"\   'is_selectable' : 1,
+"\   }
+"
+"function! s:action_table_status.bzr_add.func(candidates)
+"    for l:candidate in a:candidates
+"        let l:bzrstatus = vimproc#system("bzr add ".l:candidate['action__path'])
+"    endfor
+"endfunction
+"
+""
+"let s:unite_bzr_status.action_table.common = s:action_table_status
 
 
 "----------------------------------------------------------+
