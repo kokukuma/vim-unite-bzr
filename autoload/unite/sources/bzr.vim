@@ -39,63 +39,69 @@ let s:unite_bzr_delta = {
 
 function! s:exe_bzr_log()
 
-    let s:result = []
+    if ! exists('s:log_result')
+        let s:log_result = []
 
-    " bzr log 実行
-    if ! exists("l:bzrlog")
-        let l:bzrlog = vimproc#system("bzr log --line")
+        " bzr log 実行
+        if ! exists("l:bzrlog")
+            let l:bzrlog = vimproc#system("bzr log --line")
+        endif
+        let l:lines   = split(l:bzrlog,'\n')
+
+        " revnoを抽出
+        for line in l:lines
+            let l:revision   = split(line,':')
+            call add(s:log_result, l:revision)
+        endfor
     endif
-    let l:lines   = split(l:bzrlog,'\n')
 
-    " revnoを抽出
-    for line in l:lines
-        let l:revision   = split(line,':')
-        call add(s:result, l:revision)
-    endfor
-
-    return s:result
+    return s:log_result
 
 endfunction
 
 function! s:exe_bzr_status()
 
-    let l:result = []
+    if ! exists('s:stat_result')
+        let s:stat_result = []
 
-    " bzr root
-    let l:abspath = s:exe_bzr_root()
-    let l:abspath = substitute(l:abspath, "\n", "", "g")
+        " bzr root
+        let l:abspath = s:exe_bzr_root()
+        let l:abspath = substitute(l:abspath, "\n", "", "g")
 
-    " bzr log 実行
-    if ! exists("l:bzrstatus")
-        let l:bzrstatus = vimproc#system("bzr status")
-    endif
-    let l:lines   = split(l:bzrstatus,'\n')
-
-    " revnoを抽出
-    for line in l:lines
-        " typeを特定
-        if line=~"added"
-            let l:type = "added    : "
-        elseif line=~"modified"
-            let l:type = "modified : "
-        elseif line=~"unknown"
-            let l:type = "unknown  : "
-        else
-            " 空白除去
-            let l:file   = substitute(line, '\(^\s\+\)\|\(\s\+$\)', '', 'g')
-            let l:absfilepath = l:abspath."/".l:file
-            let l:status = [l:type,l:file,l:absfilepath]
-            call add(l:result, l:status)
+        " bzr log 実行
+        if ! exists("l:bzrstatus")
+            let l:bzrstatus = vimproc#system("bzr status")
         endif
-    endfor
+        let l:lines   = split(l:bzrstatus,'\n')
 
-    return l:result
+        " revnoを抽出
+        for line in l:lines
+            " typeを特定
+            if line=~"added"
+                let l:type = "added    : "
+            elseif line=~"modified"
+                let l:type = "modified : "
+            elseif line=~"unknown"
+                let l:type = "unknown  : "
+            else
+                " 空白除去
+                let l:file   = substitute(line, '\(^\s\+\)\|\(\s\+$\)', '', 'g')
+                let l:absfilepath = l:abspath."/".l:file
+                let l:status = [l:type,l:file,l:absfilepath]
+                call add(s:stat_result, l:status)
+            endif
+        endfor
+    endif
+
+    return s:stat_result
 
 endfunction
 
 function! s:exe_bzr_diff(revno, filepath)
 
+
     let s:result = []
+    let s:results_dic = {}
 
     " bzr root
     let l:path = s:exe_bzr_root()
@@ -126,27 +132,51 @@ endfunction
 
 function! s:exe_bzr_delta(revno)
 
-    let s:result = []
+    " key
+    let l:key = "revno".a:revno
 
-    let l:bzrdiff = vimproc#system("bzr diff -c ".a:revno)
-    let l:lines   = split(l:bzrdiff,'\n')
+    " chk exe
+    let l:exeflg = 1
+    if ! exists('s:delta_res')
+        let s:delta_res = {}
+        let l:exeflg = 1
+    else
+        for haskey in keys(s:delta_res)
+            if haskey == l:key
+                let l:exeflg = 0
+            endif
+        endfor
+    endif
 
-    " file名を抽出
-    for line in l:lines
-        if line=~"=== added file"
-            let l:type   =  "added"
-            let line     = substitute(line, "'", "", "g")
-            let l:path   = substitute(line, "=== added file", "", "g")
-            let l:delta = [l:type,l:path,a:revno]
-            call add(s:result, l:delta)
-        elseif line=~"=== modified file"
-            let l:type   =  "modified"
-            let line     = substitute(line, "'", "", "g")
-            let l:path   = substitute(line, "=== modified file", "", "g")
-            let l:delta = [l:type,l:path,a:revno]
-            call add(s:result, l:delta)
-        endif
-    endfor
+
+    " get result
+    if l:exeflg == 1
+        let s:result = []
+
+        let l:bzrdiff = vimproc#system("bzr diff -c ".a:revno)
+        let l:lines   = split(l:bzrdiff,'\n')
+
+        " file名を抽出
+        for line in l:lines
+            if line=~"=== added file"
+                let l:type   =  "added"
+                let line     = substitute(line, "'", "", "g")
+                let l:path   = substitute(line, "=== added file", "", "g")
+                let l:delta = [l:type,l:path,a:revno]
+                call add(s:result, l:delta)
+            elseif line=~"=== modified file"
+                let l:type   =  "modified"
+                let line     = substitute(line, "'", "", "g")
+                let l:path   = substitute(line, "=== modified file", "", "g")
+                let l:delta = [l:type,l:path,a:revno]
+                call add(s:result, l:delta)
+            endif
+        endfor
+
+        let s:delta_res[l:key] = s:result
+    else
+        let s:result = get(s:delta_res, l:key)
+    endif
 
     return s:result
 
