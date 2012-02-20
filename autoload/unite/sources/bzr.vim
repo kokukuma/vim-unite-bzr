@@ -44,7 +44,7 @@ function! s:exe_bzr_log()
 
         " bzr log 実行
         if ! exists("l:bzrlog")
-            let l:bzrlog = vimproc#system("bzr log --line")
+            let l:bzrlog = vimproc#system("bzr log --line --limit 300")
         endif
         let l:lines   = split(l:bzrlog,'\n')
 
@@ -110,9 +110,9 @@ function! s:exe_bzr_diff(revno, filepath)
 
     " bzr diff の引数を決定
     if a:revno != "" && a:filepath != ""
-        let l:diff_args = " -c ".a:revno ." ".a:filepath
+        let l:diff_args = " -c ".a:revno ." ".l:path
     elseif a:revno == "" && a:filepath != ""
-        let l:diff_args = " ".a:filepath
+        let l:diff_args = " ".l:path
     elseif a:revno != "" && a:filepath == ""
         let l:diff_args = " -c ".a:revno
     endif
