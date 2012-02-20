@@ -109,42 +109,6 @@ function! s:exe_bzr_status()
 
 endfunction
 
-<<<<<<< HEAD
-function! s:exe_bzr_diff(revno, filepath)
-
-
-    let s:result = []
-    let s:results_dic = {}
-
-    " bzr root
-    let l:path = s:exe_bzr_root()
-    let l:path = substitute(l:path, "\n", "", "g")
-    let l:path = l:path."/".substitute(a:filepath, '\(^\s\+\)\|\(\s\+$\)', '', 'g')
-
-    " bzr diff の引数を決定
-    if a:revno != "" && a:filepath != ""
-        let l:diff_args = " -c ".a:revno ." ".l:path
-    elseif a:revno == "" && a:filepath != ""
-        let l:diff_args = " ".l:path
-    elseif a:revno != "" && a:filepath == ""
-        let l:diff_args = " -c ".a:revno
-    endif
-
-    let l:bzrdiff = vimproc#system("bzr diff ".l:diff_args)
-    let l:lines   = split(l:bzrdiff,'\n')
-
-    " revnoを抽出
-    for line in l:lines
-        let l:diff_line = [line, l:path, 1]
-        call add(s:result, l:diff_line)
-    endfor
-
-    return s:result
-
-endfunction
-
-=======
->>>>>>> f79bf4a49b6c17c1f574a9a4b4add446a279702f
 function! s:exe_bzr_delta(revno)
 
     " key
