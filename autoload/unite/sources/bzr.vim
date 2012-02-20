@@ -21,12 +21,6 @@ let s:unite_bzr_status = {
 \   'default_action': {'common':'execute'},
 \}
 
-let s:unite_bzr_diff = {
-\   'name': 'bzr_diff',
-\   'action_table': {},
-\   'default_action': {'common':'execute'},
-\}
-
 let s:unite_bzr_delta = {
 \   'name': 'bzr_delta',
 \   'action_table': {},
@@ -37,15 +31,30 @@ let s:unite_bzr_delta = {
 "  exe bzr                                                 |
 "----------------------------------------------------------+
 
-function! s:exe_bzr_log()
+function! s:exe_bzr_log(file)
+    " key
+    if a:file == ""
+        let l:key = "all"
+    else
+        let l:key = a:file
+    endif
 
-    if ! exists('s:log_result')
-        let s:log_result = []
+    " check cache
+    if ! exists('s:log_result_list')
+        let l:type = 0
+        let s:log_result_list = {}
+        let s:log_result =[]
+    elseif ! has_key(s:log_result_list, l:key)
+        let l:type = 0
+        let s:log_result =[]
+    else
+        let l:type = 1
+    endif
 
+    " 
+    if l:type == 0
         " bzr log 実行
-        if ! exists("l:bzrlog")
-            let l:bzrlog = vimproc#system("bzr log --line --limit 300")
-        endif
+        let l:bzrlog = vimproc#system("bzr log --line --limit 300 ".a:file)
         let l:lines   = split(l:bzrlog,'\n')
 
         " revnoを抽出
@@ -53,9 +62,12 @@ function! s:exe_bzr_log()
             let l:revision   = split(line,':')
             call add(s:log_result, l:revision)
         endfor
+
+        "
+        let s:log_result_list[l:key] = s:log_result
     endif
 
-    return s:log_result
+    return s:log_result_list[l:key]
 
 endfunction
 
@@ -97,6 +109,7 @@ function! s:exe_bzr_status()
 
 endfunction
 
+<<<<<<< HEAD
 function! s:exe_bzr_diff(revno, filepath)
 
 
@@ -130,6 +143,8 @@ function! s:exe_bzr_diff(revno, filepath)
 
 endfunction
 
+=======
+>>>>>>> f79bf4a49b6c17c1f574a9a4b4add446a279702f
 function! s:exe_bzr_delta(revno)
 
     " key
@@ -189,6 +204,83 @@ function! s:exe_bzr_root()
 
 endfunction
 
+function! s:exe_bzr_cat(revno, file)
+
+    let l:bzrcat = vimproc#system("bzr cat -r ".a:revno." ".a:file)
+    return l:bzrcat
+
+endfunction
+
+
+
+" 一時ファイルを作成
+function! unite#sources#bzr#vimdiff(revno, fil)
+
+    " 変更後のリビジョン
+    let l:after_rev  = a:revno
+    let l:before_rev = 0
+
+    " 渡させたファイルに関係するリビジョンを抽出
+    let l:revnos = s:exe_bzr_log(a:fil)
+
+    "echo l:revnos
+
+    " 変更前のリビジョンを取得
+    if l:after_rev == 0
+        let l:before_rev = l:revnos[0][0]
+
+    else
+        let l:flg = 0
+        for rev in l:revnos
+            if l:flg == 1
+               let l:before_rev = rev[0]
+               let l:flg = 0
+            elseif rev[0] == a:revno
+                let l:flg = 1
+            endif
+        endfor
+    endif
+
+    "echo l:after_rev
+    "echo l:before_rev
+    "echo "karino"
+
+    " revisionを渡し,ファイルの内容を復元
+    let l:file_lines_a = s:exe_bzr_cat(l:after_rev, a:fil)
+
+    if l:before_rev == 0
+        let l:file_lines_b = ""
+    else
+        let l:file_lines_b = s:exe_bzr_cat(l:before_rev, a:fil)
+    endif
+
+
+    " 一時ファイルを作成
+    if l:after_rev == 0
+        let s:tmpfile_a = a:fil
+    else
+        let s:tmpfile_a = tempname().".php"
+        execute "redir! > " . s:tmpfile_a
+            silent! echo l:file_lines_a
+        redir END
+    endif
+
+    let s:tmpfile_b = tempname().".php"
+    execute "redir! > " . s:tmpfile_b
+        silent! echo l:file_lines_b
+    redir END
+
+    "" vimdiffを実行する
+    let s:bufnr = bufnr(s:tmpfile_b,1)
+    echo s:bufnr
+    execute 'buffer' s:bufnr
+    execute ':vertical diffsplit ' s:tmpfile_a
+
+endfunction
+
+
+
+
 "----------------------------------------------------------+
 "  unite source                                            |
 "----------------------------------------------------------+
@@ -197,7 +289,7 @@ endfunction
 function! s:unite_bzr_log.gather_candidates(args, context)
 
   "exe bzr log
-  let s:bzr_log_res = s:exe_bzr_log()
+  let s:bzr_log_res = s:exe_bzr_log("")
 
   return map(copy(s:bzr_log_res), '{
   \   "word": v:val[0].":".v:val[1],
@@ -206,45 +298,6 @@ function! s:unite_bzr_log.gather_candidates(args, context)
   \   "action__source_name": [ "bzr_delta", v:val[0] ],
   \   "revision_number": v:val[0],
   \ }')
-
-endfunction
-
-" bzr status
-function! s:unite_bzr_status.gather_candidates(args, context)
-
-
-    let s:bzr_status = s:exe_bzr_status()
-
-    return map(copy(s:bzr_status), '{
-    \   "word": v:val[0]." ".v:val[1],
-    \   "source": "revision",
-    \   "kind": "source",
-    \   "action__source_name": [ "bzr_diff", ["",v:val[1]]],
-    \   "action__path": v:val[2],
-    \ }')
-
-endfunction
-
-" bzr diff
-function! s:unite_bzr_diff.gather_candidates(args, context)
-
-    " exe bzr diff
-    let l:bzr_diff = s:exe_bzr_diff(a:args[0][0],a:args[0][1])
-
-    " 色を設定
-    hi default ADDLINE guifg=DarkBlue guibg=DarkGray gui=none ctermfg=yellow ctermbg=DarkGray cterm=none
-    hi default DELLINE guifg=DarkBlue guibg=DarkGray gui=none ctermfg=green ctermbg=DarkGray cterm=none
-    call matchadd("ADDLINE","^-   +.*$")
-    call matchadd("DELLINE","^-   -.*$")
-
-    "
-    return map(copy(l:bzr_diff), '{
-    \   "word": v:val[0],
-    \   "source": "revision",
-    \   "kind": "jump_list",
-    \   "action__path": v:val[1],
-    \   "action__line": v:val[2],
-    \ }')
 
 endfunction
 
@@ -257,12 +310,29 @@ function! s:unite_bzr_delta.gather_candidates(args, context)
     return map(copy(l:bzr_delta), '{
     \   "word": v:val[0]." : ".v:val[1],
     \   "source": "revision",
-    \   "kind": "source",
-    \   "action__source_name": [ "bzr_diff", [v:val[2],v:val[1]]],
+    \   "kind": "command",
+    \   "action__command": "call unite#sources#bzr#vimdiff(''".v:val[2]."'',''".v:val[1]."'')",
     \   "revision_number": v:val[1],
     \ }')
 
 endfunction
+
+" bzr status
+function! s:unite_bzr_status.gather_candidates(args, context)
+
+
+    let s:bzr_status = s:exe_bzr_status()
+
+    return map(copy(s:bzr_status), '{
+    \   "word": v:val[0]." ".v:val[1],
+    \   "source": "revision",
+    \   "kind": "command",
+    \   "action__command": "call unite#sources#bzr#vimdiff(''0'',''".v:val[1]."'')",
+    \   "action__path": v:val[2],
+    \ }')
+
+endfunction
+
 
 "----------------------------------------------------------+
 "  unite action                                            |
@@ -311,34 +381,13 @@ endfunction
 let s:unite_bzr_status.action_table.common = s:action_table_status
 
 
-
-
-"" bzr revert
-"let s:action_table_status = {}
-"
-"" bzr add
-"let s:action_table_status.bzr_add = {
-"\   'description'   : 'bzr add',
-"\   'is_selectable' : 1,
-"\   }
-"
-"function! s:action_table_status.bzr_add.func(candidates)
-"    for l:candidate in a:candidates
-"        let l:bzrstatus = vimproc#system("bzr add ".l:candidate['action__path'])
-"    endfor
-"endfunction
-"
-""
-"let s:unite_bzr_status.action_table.common = s:action_table_status
-
-
 "----------------------------------------------------------+
 "                                                          |
 "----------------------------------------------------------+
 
 " 登録
 function! unite#sources#bzr#define()
-    return [s:unite_bzr_log, s:unite_bzr_status, s:unite_bzr_diff, s:unite_bzr_delta]
+    return [s:unite_bzr_log, s:unite_bzr_status, s:unite_bzr_delta]
 endfunction
 
 let &cpo = s:save_cpo
