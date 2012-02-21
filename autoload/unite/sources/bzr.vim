@@ -192,22 +192,24 @@ function! unite#sources#bzr#vimdiff(revno, fil)
     " 変更前のリビジョンを取得
     if l:after_rev == 0
         let l:before_rev = l:revnos[0][0]
-
     else
-        let l:flg = 0
-        for rev in l:revnos
-            if l:flg == 1
-               let l:before_rev = rev[0]
-               let l:flg = 0
-            elseif rev[0] == a:revno
-                let l:flg = 1
-            endif
-        endfor
+        let l:num = match(map(copy(l:revnos),'v:val[0]'), a:revno) + 1
+        let l:before_rev = l:revnos[l:num][0]
     endif
-
     "echo l:after_rev
     "echo l:before_rev
-    "echo "karino"
+    "else
+    "    let l:flg = 0
+    "    for rev in l:revnos
+    "        if l:flg == 1
+    "           let l:before_rev = rev[0]
+    "           let l:flg = 0
+    "        elseif rev[0] == a:revno
+    "            let l:flg = 1
+    "        endif
+    "    endfor
+    "endif
+
 
     " revisionを渡し,ファイルの内容を復元
     let l:file_lines_a = s:exe_bzr_cat(l:after_rev, a:fil)
