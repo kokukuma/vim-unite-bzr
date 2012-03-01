@@ -30,8 +30,15 @@ let s:unite_bzr_delta = {
 "  exe bzr                                                 |
 "----------------------------------------------------------+
 "
+" bzr limit number
 let g:bzr_limit_number = 300
+function! bzr#SetBzrLimit(num)
+    let g:bzr_limit_number = a:num
+    unlet s:log_result_list
+endfunction
+command! -nargs=1 SetBzrLimit :call bzr#SetBzrLimit(<q-args>)
 
+" bzr log
 function! s:exe_bzr_log(file)
 
     " bzr root
