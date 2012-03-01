@@ -33,6 +33,10 @@ let s:unite_bzr_delta = {
 let g:bzr_limit_number = 300
 
 function! s:exe_bzr_log(file)
+
+    " bzr root
+    let l:abspath = s:exe_bzr_root()
+
     " key
     if a:file == ""
         let l:key = "all"
@@ -79,6 +83,7 @@ function! s:exe_bzr_status()
 
         " bzr root
         let l:abspath = s:exe_bzr_root()
+
         let l:abspath = substitute(l:abspath, "\n", "", "g")
 
         " bzr log 実行
@@ -181,6 +186,8 @@ endfunction
 " 一時ファイルを作成
 function! unite#sources#bzr#vimdiff(revno, fil)
 
+    setlocal buftype=nofile
+
     " 変更後のリビジョン
     let l:after_rev  = a:revno
     let l:before_rev = 0
@@ -197,19 +204,6 @@ function! unite#sources#bzr#vimdiff(revno, fil)
         let l:num = match(map(copy(l:revnos),'v:val[0]'), a:revno) + 1
         let l:before_rev = l:revnos[l:num][0]
     endif
-    "echo l:after_rev
-    "echo l:before_rev
-    "else
-    "    let l:flg = 0
-    "    for rev in l:revnos
-    "        if l:flg == 1
-    "           let l:before_rev = rev[0]
-    "           let l:flg = 0
-    "        elseif rev[0] == a:revno
-    "            let l:flg = 1
-    "        endif
-    "    endfor
-    "endif
 
 
     " revisionを渡し,ファイルの内容を復元
@@ -222,22 +216,28 @@ function! unite#sources#bzr#vimdiff(revno, fil)
     endif
 
 
+
     " 一時ファイルを作成
+    setlocal buftype=nofile
+
     if l:after_rev == 0
         let s:tmpfile_a = a:fil
     else
         let s:tmpfile_a = tempname().".php"
         execute "redir! > " . s:tmpfile_a
+        "execute "redir! > " . getbufvar(s:tmpfile_a, '&buftype')
             silent! echo l:file_lines_a
         redir END
     endif
 
     let s:tmpfile_b = tempname().".php"
     execute "redir! > " . s:tmpfile_b
+    "execute "redir! > " . getbufvar(s:tmpfile_a, '&buftype')
         silent! echo l:file_lines_b
     redir END
 
     "" vimdiffを実行する
+    "let s:bufnr = bufnr(s:tmpfile_b,1)
     let s:bufnr = bufnr(s:tmpfile_b,1)
     echo s:bufnr
     execute 'buffer' s:bufnr
