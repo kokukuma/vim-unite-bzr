@@ -250,6 +250,12 @@ function! unite#sources#bzr#vimdiff(revno, fil)
     execute 'buffer' s:bufnr
     execute ':vertical diffsplit ' s:tmpfile_a
 
+    "" no folding
+    execute 'set nofoldenable'
+    execute 'wincmd p'
+    execute 'set nofoldenable'
+    execute 'wincmd p'
+
 endfunction
 
 
@@ -262,12 +268,27 @@ endfunction
 " bzr log
 function! s:unite_bzr_log.gather_candidates(args, context)
 
-  "exe bzr log
-  let s:bzr_log_res = s:exe_bzr_log("")
+  "let s:bzr_log_res = s:exe_bzr_log()
+  "
+  if exists('a:args[0]')
+    let s:bzr_log_res = s:exe_bzr_log(a:args[0])
+    call unite#print_message('[file_log]'.a:args[0])
+
+  elseif exists('g:unite_bzr_log_file')
+    let s:bzr_log_res = s:exe_bzr_log(g:unite_bzr_log_file)
+    call unite#print_message('[file_log]'.g:unite_bzr_log_file)
+    unlet g:unite_bzr_log_file
+
+  else
+    let s:bzr_log_res = s:exe_bzr_log("")
+  endif
+
+  "let s:bzr_log_res = s:exe_bzr_log(a:args[0])
+  "let s:bzr_log_res = s:exe_bzr_log("")
 
   return map(copy(s:bzr_log_res), '{
   \   "word": v:val[0].":".v:val[1],
-  \   "source": "revision",
+  \   "source": "bzr_log",
   \   "kind": "source",
   \   "action__source_name": [ "bzr_delta", v:val[0] ],
   \   "revision_number": v:val[0],
@@ -283,10 +304,10 @@ function! s:unite_bzr_delta.gather_candidates(args, context)
     "
     return map(copy(l:bzr_delta), '{
     \   "word": v:val[0]." : ".v:val[1],
-    \   "source": "revision",
+    \   "source": "bzr_delta",
     \   "kind": "command",
     \   "action__command": "call unite#sources#bzr#vimdiff(''".v:val[2]."'',''".v:val[1]."'')",
-    \   "revision_number": v:val[1],
+    \   "action__path":v:val[1],
     \ }')
 
 endfunction
@@ -299,7 +320,7 @@ function! s:unite_bzr_status.gather_candidates(args, context)
 
     return map(copy(s:bzr_status), '{
     \   "word": v:val[0]." ".v:val[1],
-    \   "source": "revision",
+    \   "source": "bzr_status",
     \   "kind": "command",
     \   "action__command": "call unite#sources#bzr#vimdiff(''0'',''".v:val[1]."'')",
     \   "action__path": v:val[2],
@@ -312,6 +333,7 @@ endfunction
 "  unite action                                            |
 "----------------------------------------------------------+
 
+"--- unite bzr-status adction
 let s:action_table_status = {}
 
 " bzr add
@@ -338,7 +360,6 @@ function! s:action_table_status.bzr_remove.func(candidates)
     endfor
 endfunction
 
-
 " bzr revert
 let s:action_table_status.bzr_revert = {
 \   'description'   : 'bzr revert',
@@ -351,8 +372,75 @@ function! s:action_table_status.bzr_revert.func(candidates)
     endfor
 endfunction
 
-"
 let s:unite_bzr_status.action_table.common = s:action_table_status
+
+
+
+
+"--- unite bzr-delta adction
+let s:action_table_delta = {}
+
+" bzr add
+let s:action_table_delta.bzr_log = {
+\   'description'   : 'bzr log',
+\   'is_selectable' : 1,
+\   'is_quit' : 0,
+\   }
+
+function! s:action_table_delta.bzr_log.func(candidates)
+
+    "------------------------
+    "let l:context = unite#get_context()
+    " let a:candidates[0].action__source_name = 'bzr_log'
+    " let a:candidates[0].action__source_args = [ a:candidates[0].action__path ]
+
+    " let a:candidates[0].action__source_name = 'bzr_delta'
+    " let a:candidates[0].action__source_args = [9]
+
+    " call unite#start_temporary(map(copy(a:candidates),
+    "     \ 'has_key(v:val, "action__source_args") ?'
+    "     \  . 'insert(copy(v:val.action__source_args), v:val.action__source_name) :'
+    "     \  . 'v:val.action__source_name'))
+
+    "call s:unite_bzr_log.gather_candidates(a:candidates, l:context)
+
+
+    "------------------------
+    "let l:sources = unite#get_sources('bzr_log')
+    let l:context = unite#get_context()
+    let file_path = a:candidates[0]['action__path']
+    "call unite#start([['bzr_log', file_path,]], l:context )
+    "call unite#start(['bzr_log', file_path], l:context )
+
+    "let l:context['source__sources'] = ''
+    "let l:context['old_buffer_info'] = ''
+
+    "let l:context.no_quit = 1 
+    """"""""""call unite#start([['bzr_log', file_path]])
+    "echo l:context
+    "call unite#start(['bzr_log', file_path]], l:context)
+    call unite#start(['bzr_log', file_path]], l:context)
+    "call unite#start([['bzr_log', file_path]])
+    "
+    "call unite#start([['bzr_log',file_path]], l:context)
+
+    "call unite#start([file_path],l:context)
+    "call unite#start([['bzr_delta',file_path]],l:context)
+    "call unite#start([[file_path]],l:context)
+    "
+    "echo l:context
+    "echo l:sources
+    "call unite#start([l:sources, file_path],l:context)
+    "call unite#start(l:sources, l:context)
+    "
+    " call unite#start_temporary(l:sources)
+    return
+
+endfunction
+
+let s:unite_bzr_delta.action_table.common = s:action_table_delta
+let s:unite_bzr_status.action_table.common = s:action_table_delta
+
 
 
 "----------------------------------------------------------+
