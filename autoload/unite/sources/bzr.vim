@@ -376,17 +376,27 @@ let s:unite_bzr_status.action_table.common = s:action_table_status
 
 
 
-
 "--- unite bzr-delta adction
 let s:action_table_delta = {}
 
-" bzr add
+" bzr vimdiff
+let s:action_table_delta.bzr_local_diff = {
+\   'description'   : 'diff with local',
+\   'is_selectable' : 1,
+\   'is_quit' : 0,
+\   }
+function! s:action_table_delta.bzr_local_diff.func(candidates)
+    for l:candidate in a:candidates
+        call unite#sources#bzr#vimdiff('0',l:candidate['action__path'])
+    endfor
+endfunction
+
+" bzr log 
 let s:action_table_delta.bzr_log = {
 \   'description'   : 'bzr log',
 \   'is_selectable' : 1,
 \   'is_quit' : 0,
 \   }
-
 function! s:action_table_delta.bzr_log.func(candidates)
 
     "------------------------
