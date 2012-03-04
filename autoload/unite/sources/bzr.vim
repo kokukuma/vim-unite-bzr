@@ -4,7 +4,6 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-"test
 "----------------------------------------------------------+
 "  define unite source                                     |
 "----------------------------------------------------------+
@@ -30,6 +29,8 @@ let s:unite_bzr_delta = {
 "----------------------------------------------------------+
 "  exe bzr                                                 |
 "----------------------------------------------------------+
+"
+let g:bzr_limit_number = 300
 
 function! s:exe_bzr_log(file)
     " key
@@ -54,7 +55,7 @@ function! s:exe_bzr_log(file)
     " 
     if l:type == 0
         " bzr log 実行
-        let l:bzrlog = vimproc#system("bzr log --line --limit 300 ".a:file)
+        let l:bzrlog = vimproc#system("bzr log --line --limit ".g:bzr_limit_number." ".a:file)
         let l:lines   = split(l:bzrlog,'\n')
 
         " revnoを抽出
