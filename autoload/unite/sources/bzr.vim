@@ -152,14 +152,14 @@ function! s:exe_bzr_delta(revno)
         for line in l:lines
             if line=~"=== added file"
                 let l:type   =  "added"
-                let line     = substitute(line, "'", "", "g")
-                let l:path   = substitute(line, "=== added file", "", "g")
+                let line       = matchstr(line, "'.*'")
+                let l:path     = substitute(line, "'", "", "g")
                 let l:delta = [l:type,l:path,a:revno]
                 call add(s:result, l:delta)
             elseif line=~"=== modified file"
                 let l:type   =  "modified"
-                let line     = substitute(line, "'", "", "g")
-                let l:path   = substitute(line, "=== modified file", "", "g")
+                let line       = matchstr(line, "'.*'")
+                let l:path     = substitute(line, "'", "", "g")
                 let l:delta = [l:type,l:path,a:revno]
                 call add(s:result, l:delta)
             endif
