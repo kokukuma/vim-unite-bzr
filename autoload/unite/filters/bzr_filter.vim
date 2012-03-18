@@ -20,7 +20,6 @@ function! s:converter.filter(candidates, context)
     for candidate in a:candidates
       if candidate.source == 'bzr_delta'
           let delta_flg = 1
-          echo candidate
           if has_key(s:bzr_delta_file, candidate.bzr_file_path)
               let rev   = s:bzr_delta_file[candidate.bzr_file_path]
               call add(rev, candidate.bzr_revision_number)
