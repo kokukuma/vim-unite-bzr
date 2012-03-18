@@ -26,6 +26,9 @@ let s:unite_bzr_delta = {
 \   'default_action': {'common':'execute'},
 \}
 
+
+
+
 "----------------------------------------------------------+
 "  exe bzr                                                 |
 "----------------------------------------------------------+
@@ -191,7 +194,7 @@ endfunction
 
 
 " 一時ファイルを作成
-function! unite#sources#bzr#vimdiff(revno, fil)
+function! unite#sources#bzr#vimdiff_old(revno, fil)
 
     setlocal buftype=nofile
 
@@ -222,7 +225,7 @@ function! unite#sources#bzr#vimdiff(revno, fil)
         let l:file_lines_b = s:exe_bzr_cat(l:before_rev, a:fil)
     endif
 
-
+    " 
 
     " 一時ファイルを作成
     setlocal buftype=nofile
@@ -259,6 +262,91 @@ function! unite#sources#bzr#vimdiff(revno, fil)
 endfunction
 
 
+function! unite#sources#bzr#vimdiff(revno, brevno, fil)
+    setlocal buftype=nofile
+
+
+    " 変更後のリビジョン
+    let l:after_rev  = a:revno
+    let l:before_rev = 0
+
+
+    " 渡させたファイルに関係するリビジョンを抽出
+    if exists('g:bzr_log_res')
+        let l:revnos = g:bzr_log_res
+    else
+        let l:revnos = s:exe_bzr_log(a:fil)
+    endif
+
+
+    " 変更前のリビジョンを取得
+    if a:brevno == 0
+        let l:before_rev = l:revnos[0][0]
+    else
+        let l:num = match(map(copy(l:revnos),'v:val[0]'), a:brevno) + 1
+        let l:before_rev = l:revnos[l:num][0]
+    endif
+
+
+    " fileを準備する
+    if l:after_rev == 0
+        let s:tmpfile_a = a:fil
+
+    else
+        " revisionを渡し,ファイルの内容を復元
+        let l:file_lines_a = s:exe_bzr_cat(l:after_rev, a:fil)
+
+        " tmpfileを作成する
+        let s:tmpfile_a = unite#sources#bzr#mk_temp_file(l:file_lines_a)
+    endif
+
+
+    " revisionを渡し,ファイルの内容を復元
+    let l:file_lines_b = s:exe_bzr_cat(l:before_rev, a:fil)
+
+
+    " tmpfileを作成する
+    let s:tmpfile_b = unite#sources#bzr#mk_temp_file(l:file_lines_b)
+
+
+    " vimdiffを実行
+    call unite#sources#bzr#exevimdiff(s:tmpfile_b, s:tmpfile_a)
+
+
+endfunction
+
+
+function! unite#sources#bzr#mk_temp_file(file_lines)
+
+    let s:tmpfile = tempname().".php"
+    execute "redir! > " . s:tmpfile
+    "execute "redir! > " . getbufvar(s:tmpfile_a, '&buftype')
+        silent! echo a:file_lines
+    redir END
+
+    return s:tmpfile
+
+endfunction
+
+
+
+function! unite#sources#bzr#exevimdiff(before_file, after_file)
+    " rev : リビジョン番号,0の場合は、現在のファイルを指す
+
+    " vimdiffを実行する
+    "let s:bufnr = bufnr(s:tmpfile_b,1)
+    let s:bufnr = bufnr(a:before_file,1)
+    echo s:bufnr
+    execute 'buffer' s:bufnr
+    execute ':vertical diffsplit ' a:after_file
+
+    "" no folding
+    execute 'set nofoldenable'
+    execute 'wincmd p'
+    execute 'set nofoldenable'
+    execute 'wincmd p'
+
+endfunction
 
 
 "----------------------------------------------------------+
@@ -281,6 +369,7 @@ function! s:unite_bzr_log.gather_candidates(args, context)
 
   else
     let s:bzr_log_res = s:exe_bzr_log("")
+    let g:bzr_log_res = s:bzr_log_res
   endif
 
   "let s:bzr_log_res = s:exe_bzr_log(a:args[0])
@@ -306,8 +395,10 @@ function! s:unite_bzr_delta.gather_candidates(args, context)
     \   "word": v:val[0]." : ".v:val[1],
     \   "source": "bzr_delta",
     \   "kind": "command",
-    \   "action__command": "call unite#sources#bzr#vimdiff(''".v:val[2]."'',''".v:val[1]."'')",
+    \   "action__command": "call unite#sources#bzr#vimdiff(''".v:val[2]."'',''".v:val[2]."'',''".v:val[1]."'')",
     \   "action__path":v:val[1],
+    \   "bzr_revision_number":v:val[2],
+    \   "bzr_file_path":v:val[1],
     \ }')
 
 endfunction
@@ -322,7 +413,7 @@ function! s:unite_bzr_status.gather_candidates(args, context)
     \   "word": v:val[0]." ".v:val[1],
     \   "source": "bzr_status",
     \   "kind": "command",
-    \   "action__command": "call unite#sources#bzr#vimdiff(''0'',''".v:val[1]."'')",
+    \   "action__command": "call unite#sources#bzr#vimdiff(''0'',''0'',''".v:val[1]."'')",
     \   "action__path": v:val[2],
     \ }')
 
@@ -451,6 +542,10 @@ endfunction
 let s:unite_bzr_delta.action_table.common = s:action_table_delta
 let s:unite_bzr_status.action_table.common = s:action_table_delta
 
+"----------------------------------------------------------+
+" filter                                                   |
+"----------------------------------------------------------+
+call unite#set_profile('bzr', 'filters', ['bzr_filter',])
 
 
 "----------------------------------------------------------+
@@ -461,6 +556,7 @@ let s:unite_bzr_status.action_table.common = s:action_table_delta
 function! unite#sources#bzr#define()
     return [s:unite_bzr_log, s:unite_bzr_status, s:unite_bzr_delta]
 endfunction
+
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
