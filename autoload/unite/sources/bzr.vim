@@ -548,7 +548,7 @@ let s:unite_bzr_status.action_table.common = s:action_table_delta
 "----------------------------------------------------------+
 " filter                                                   |
 "----------------------------------------------------------+
-call unite#set_profile('bzr', 'filters', ['bzr_filter',])
+call unite#set_profile('bzr', 'filters', ['bzr_file_converter',])
 
 
 "----------------------------------------------------------+
