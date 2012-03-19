@@ -390,7 +390,6 @@ function! s:unite_bzr_delta.gather_candidates(args, context)
     " exe bzr diff
     let l:bzr_delta = s:exe_bzr_delta(a:args[0])
 
-    "
     return map(copy(l:bzr_delta), '{
     \   "word": v:val[0]." : ".v:val[1],
     \   "source": "bzr_delta",
@@ -478,7 +477,7 @@ let s:action_table_delta.bzr_local_diff = {
 \   }
 function! s:action_table_delta.bzr_local_diff.func(candidates)
     for l:candidate in a:candidates
-        call unite#sources#bzr#vimdiff('0',l:candidate['action__path'])
+        call unite#sources#bzr#vimdiff('0','0',l:candidate['action__path'])
     endfor
 endfunction
 
