@@ -390,6 +390,10 @@ function! s:unite_bzr_delta.gather_candidates(args, context)
     " exe bzr diff
     let l:bzr_delta = s:exe_bzr_delta(a:args[0])
 
+    " filter_flg
+    let g:delta_filter_flg = 0
+
+
     return map(copy(l:bzr_delta), '{
     \   "word": v:val[0]." : ".v:val[1],
     \   "source": "bzr_delta",
