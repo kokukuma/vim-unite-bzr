@@ -130,6 +130,7 @@ function! s:exe_bzr_delta(revno)
     " key
     let l:key = "revno".a:revno
 
+
     " chk exe
     let l:exeflg = 1
     if ! exists('s:delta_res')
@@ -142,7 +143,6 @@ function! s:exe_bzr_delta(revno)
             endif
         endfor
     endif
-
 
     " get result
     if l:exeflg == 1
@@ -200,7 +200,7 @@ function! unite#sources#bzr#vimdiff(revno, brevno, fil)
     let l:before_rev = 0
 
 
-    " 渡させたファイルに関係するリビジョンを抽出
+    " 渡されたファイルに関係するリビジョンを抽出
     if exists('g:bzr_log_res')
         let l:revnos = g:bzr_log_res
     else
@@ -210,11 +210,18 @@ function! unite#sources#bzr#vimdiff(revno, brevno, fil)
 
     " 変更前のリビジョンを取得
     if a:brevno == 0
+        " brevnoがゼロの場合は、before_revを最新のものに設定する
         let l:before_rev = l:revnos[0][0]
     else
-        let l:num = match(map(copy(l:revnos),'v:val[0]'), a:brevno) + 1
-        let l:before_rev = l:revnos[l:num][0]
+        " brevnoが指定されている場合は、次の配列番号(1つ前のリビジョン番号)
+        let l:array_num = match(map(copy(l:revnos),'v:val[0]'), a:brevno) + 1
+        let l:before_rev = l:revnos[l:array_num][0]
     endif
+
+    " echo l:after_rev
+    " echo l:before_rev
+    " echo l:revnos
+    " return
 
 
     " fileを準備する
@@ -226,7 +233,7 @@ function! unite#sources#bzr#vimdiff(revno, brevno, fil)
         let l:file_lines_a = s:exe_bzr_cat(l:after_rev, a:fil)
 
         " tmpfileを作成する
-        let s:tmpfile_a = unite#sources#bzr#mk_temp_file(l:file_lines_a)
+        let s:tmpfile_a = unite#sources#bzr#mk_temp_file(a:fil, l:file_lines_a)
     endif
 
 
@@ -235,19 +242,24 @@ function! unite#sources#bzr#vimdiff(revno, brevno, fil)
 
 
     " tmpfileを作成する
-    let s:tmpfile_b = unite#sources#bzr#mk_temp_file(l:file_lines_b)
+    let s:tmpfile_b = unite#sources#bzr#mk_temp_file(a:fil ,l:file_lines_b)
 
 
     " vimdiffを実行
+    " 1, s:tempfile_b : 渡したrevnoの1つ前のcat
+    "    s:tempfile_a : 渡したrevnoのcat
+    "
+    " 2, s:tempfile_b : 
+    "    s:tempfile_a : 
     call unite#sources#bzr#exevimdiff(s:tmpfile_b, s:tmpfile_a)
 
 
 endfunction
 
 
-function! unite#sources#bzr#mk_temp_file(file_lines)
+function! unite#sources#bzr#mk_temp_file(file_name, file_lines)
 
-    let s:tmpfile = tempname().".php"
+    let s:tmpfile = tempname()."_".substitute(a:file_name, '/','_','g')
     execute "redir! > " . s:tmpfile
     "execute "redir! > " . getbufvar(s:tmpfile_a, '&buftype')
         silent! echo a:file_lines
@@ -402,9 +414,22 @@ let s:unite_bzr_status.action_table.common = s:action_table_status
 "--- unite bzr-delta adction
 let s:action_table_delta = {}
 
+" " open file
+" let s:action_table_delta.open_file = {
+" \   'description'   : 'open_file',
+" \   'is_selectable' : 1,
+" \   'is_quit' : 0,
+" \   }
+" function! s:action_table_delta.open_file.func(candidates)
+"     for l:candidate in a:candidates
+"         call unite#sources#bzr#vimdiff('0','0',l:candidate['action__path'])
+"     endfor
+" endfunction
+
 " bzr vimdiff
 let s:action_table_delta.bzr_local_diff = {
 \   'description'   : 'diff with local',
+\   'is_invalidate_cache' : 1,
 \   'is_selectable' : 1,
 \   'is_quit' : 0,
 \   }
@@ -417,6 +442,7 @@ endfunction
 " bzr log 
 let s:action_table_delta.bzr_log = {
 \   'description'   : 'bzr log',
+\   'is_invalidate_cache' : 1,
 \   'is_selectable' : 1,
 \   'is_quit' : 0,
 \   }
